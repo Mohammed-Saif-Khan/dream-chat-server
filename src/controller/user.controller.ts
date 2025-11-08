@@ -151,8 +151,6 @@ export const forgotPassword = asyncHandler(
       return res.status(500).json({ message: "OTP is not sent!" });
     }
 
-    console.log(resetToken, "resetToken");
-
     try {
       await sendMail(email, otp);
     } catch (error) {
