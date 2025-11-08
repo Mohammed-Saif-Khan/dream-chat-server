@@ -75,7 +75,9 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
     .lean();
 
   if (!userProfile) {
-    const user = await User.findById(userId).select("-password -refreshToken");
+    const user = await User.findById(userId).select(
+      "-password -refreshToken -resetPasswordExpire -resetPasswordToken -provider -otp"
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
