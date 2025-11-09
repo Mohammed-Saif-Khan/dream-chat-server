@@ -6,7 +6,6 @@ import {
   otp,
   resetPassword,
   signup,
-  updatePassword,
 } from "../controller/user.controller";
 import { verifyJWT } from "../middleware/auth.middleware";
 
@@ -18,6 +17,5 @@ router.route("/logout").post(verifyJWT, logout);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/otp").post(otp);
 router.route("/reset-password").post(resetPassword);
-router.route("/update-password").post(verifyJWT, updatePassword);
 
 export default router;

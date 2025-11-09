@@ -4,6 +4,7 @@ import { generateAccessAndRefereshTokens, User } from "../models/user.model";
 import { generateOTP } from "../utils/constant";
 import { sendMail } from "../utils/mail";
 import crypto from "crypto";
+import { UserDetail } from "../models/user-detail.model";
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const { firstName, lastName, email, phone, password } = req.body;
@@ -72,6 +73,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     "-password -refreshToken"
   );
 
+  const hasProfile = Boolean(await UserDetail.exists({ user: user._id }));
   user.isVerified = true;
   await user.save();
 
@@ -86,6 +88,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     .cookie("refreshToken", refreshToken, options)
     .json({
       data: loggedInUser,
+      hasProfile,
       accessToken,
       refreshToken,
       message: "User login Successfully",
@@ -228,37 +231,5 @@ export const resetPassword = asyncHandler(
     await user.save();
 
     return res.status(200).json({ message: "Password Reset Successfully" });
-  }
-);
-
-export const updatePassword = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { oldPassword, newPassword } = req.body;
-    const userId = req.user?._id;
-
-    if ([oldPassword, newPassword].some((field) => field?.trim() === "")) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    if (!userId) {
-      return res.status(404).json({ message: "User Id not found" });
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User is not found" });
-    }
-
-    const isPasswordValid = await user.isPasswordCorrect(oldPassword);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Old password is wrong" });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    return res.status(200).json({ message: "Password Update Successfully" });
   }
 );
