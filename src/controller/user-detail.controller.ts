@@ -107,31 +107,45 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
     return res.status(400).json({ message: "User ID missing" });
   }
 
-  const userProfile = await UserDetail.findOne({ user: userId })
-    .populate("user", "-password -refreshToken")
+  // Fetch profile with populated user
+  const profile = await UserDetail.findOne({ user: userId })
+    .populate(
+      "user",
+      "-password -refreshToken -resetPasswordToken -resetPasswordExpire -otp"
+    )
     .lean();
 
-  if (!userProfile) {
-    const user = await User.findById(userId).select(
-      "-password -refreshToken -resetPasswordExpire -resetPasswordToken -provider -otp"
-    );
+  // If profile doesn't exist → return only user
+  if (!profile) {
+    const user = await User.findById(userId)
+      .select(
+        "-password -refreshToken -resetPasswordExpire -resetPasswordToken -provider -otp"
+      )
+      .lean();
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
     return res.status(200).json({
-      user,
+      user: {
+        ...user,
+      },
       hasProfile: false,
       message: "User data fetched successfully (no profile found)",
     });
   }
 
+  const finalUser = {
+    ...profile.user, // user base fields
+    ...profile, // profile fields
+  };
+
+  delete finalUser.user; // remove nested user object
+
   return res.status(200).json({
-    data: {
-      userProfile,
-      hasProfile: true,
-    },
+    user: finalUser,
+    hasProfile: true,
     message: "Profile fetched successfully",
   });
 });
