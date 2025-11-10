@@ -62,39 +62,36 @@ export const uploadAvatar = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
 
-    // 1) Avatar file aaya ya nahi
-    const avatarLocalPath = req.file?.path;
-    if (!avatarLocalPath) {
+    if (!req.file) {
       return res.status(400).json({ message: "No avatar provided" });
     }
 
-    // 2) User ka profile find karo
+    const buffer = req.file.buffer;
+
+    // Old avatar delete
     let profile = await UserDetail.findOne({ user: userId });
+    if (profile?.avatar) await deleteFromCloudinary(profile.avatar);
 
-    // 3) Purana avatar delete karo (agar exist karta hai)
-    if (profile?.avatar) {
-      await deleteFromCloudinary(profile.avatar);
-    }
-
-    // 4) New avatar Cloudinary pe upload karo
-    const uploaded = await uploadOnCloudinary(
-      avatarLocalPath,
+    // Upload new avatar
+    const uploaded: { secure_url?: string } = await uploadOnCloudinary(
+      buffer,
       "dream-chat/profile"
     );
-    if (!uploaded?.url) {
-      return res.status(500).json({ message: "Failed to upload new avatar" });
+
+    if (!uploaded?.secure_url) {
+      return res.status(500).json({ message: "Failed to upload avatar" });
     }
 
-    // 5) Upsert (create if not exist, update if exist)
+    // Save new avatar in DB
     profile = await UserDetail.findOneAndUpdate(
       { user: userId },
-      { $set: { avatar: uploaded.url } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { $set: { avatar: uploaded?.secure_url } },
+      { new: true, upsert: true }
     );
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Avatar updated successfully",
-      avatar: uploaded.url,
+      avatar: uploaded?.secure_url,
       profile,
     });
   }
