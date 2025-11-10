@@ -32,7 +32,7 @@ export const userDetailSchema = new Schema<IUserDetail>(
       type: String,
       required: false,
     },
-    google: {
+    instagram: {
       type: String,
       required: false,
     },

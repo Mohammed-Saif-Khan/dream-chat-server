@@ -26,7 +26,7 @@ export interface IUserDetail extends Document {
   country: string;
   about: string;
   facebook: string;
-  google: string;
+  instagram: string;
   x: string;
   linkedin: string;
   youtube: string;
