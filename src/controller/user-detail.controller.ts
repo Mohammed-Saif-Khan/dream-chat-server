@@ -178,3 +178,46 @@ export const updatePassword = asyncHandler(
     return res.status(200).json({ message: "Password Update Successfully" });
   }
 );
+
+export const getUsers = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?._id;
+
+  if (!userId) {
+    return res.status(404).json({ message: "User ID not found" });
+  }
+
+  const allUsers = await UserDetail.find({ user: { $ne: userId } }).populate(
+    "user",
+    "_id firstName lastName phone email"
+  );
+
+  return res
+    .status(200)
+    .json({ allUsers, message: "User data fetched Successfully" });
+});
+
+export const getUserDetails = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    if (!userId) {
+      return res.status(404).json({ message: "User ID not found" });
+    }
+
+    const user = await User.findById(userId).select(
+      "firstName lastName email phone createdAt"
+    );
+
+    const userDetail = await UserDetail.findOne({ user: userId }).select(
+      "-_id -user -createdAt -updatedAt"
+    );
+
+    const data = { ...user?.toObject(), ...userDetail?.toObject() };
+
+    return res.status(200).json({
+      data,
+      message: "User Detail Fetched Successfully",
+      success: true,
+    });
+  }
+);
