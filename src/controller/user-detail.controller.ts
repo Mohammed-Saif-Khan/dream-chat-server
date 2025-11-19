@@ -204,18 +204,19 @@ export const getUserDetails = asyncHandler(
       return res.status(404).json({ message: "User ID not found" });
     }
 
-    const user = await User.findById(userId).select(
-      "firstName lastName email phone createdAt"
-    );
+    const userDetail = await UserDetail.findOne({ user: userId })
+      .select("-_id -createdAt -updatedAt -user")
+      .populate({
+        path: "user",
+        select: "firstName lastName email phone createdAt -_id",
+      });
 
-    const userDetail = await UserDetail.findOne({ user: userId }).select(
-      "-_id -user -createdAt -updatedAt"
-    );
-
-    const data = { ...user?.toObject(), ...userDetail?.toObject() };
+    if (!userDetail) {
+      return res.status(404).json({ message: "User Detail not found" });
+    }
 
     return res.status(200).json({
-      data,
+      userDetail,
       message: "User Detail Fetched Successfully",
       success: true,
     });
