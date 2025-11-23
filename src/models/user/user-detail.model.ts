@@ -1,5 +1,5 @@
 import mongoose, { Model, Schema } from "mongoose";
-import { IUserDetail } from "../types/user/user";
+import { IUserDetail } from "../../types/user/user";
 
 export const userDetailSchema = new Schema<IUserDetail>(
   {

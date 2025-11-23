@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { verifyJWT } from "../../middleware/auth.middleware";
 import {
   accountProfile,
   getProfile,
@@ -6,9 +7,8 @@ import {
   getUsers,
   updatePassword,
   uploadAvatar,
-} from "../controller/user-detail.controller";
-import { verifyJWT } from "../middleware/auth.middleware";
-import { upload } from "../middleware/multer.middleware";
+} from "../../controller/user/user-detail.controller";
+import { upload } from "../../middleware/multer.middleware";
 
 const router = Router();
 

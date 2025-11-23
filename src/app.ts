@@ -17,10 +17,14 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 // import
-import userRouter from "./routes/user.route";
-import userDetailRouter from "./routes/user-detail.route";
+import userRouter from "./routes/user/user.route";
+import userDetailRouter from "./routes/user/user-detail.route";
+import messageRouter from "./routes/messages/message.routes";
+import chatRouter from "./routes/chats/chats.routes";
 
 app.use("/api/v1", userRouter);
 app.use("/api/v1", userDetailRouter);
+app.use("/api/v1", messageRouter);
+app.use("/api/v1", chatRouter);
 
 export { app };

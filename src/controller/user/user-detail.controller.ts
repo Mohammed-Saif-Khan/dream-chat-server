@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
-import { UserDetail } from "../models/user-detail.model";
-import { User } from "../models/user.model";
-import { asyncHandler } from "../utils/asyncHandler";
-import { IUser, IUserDetail } from "../types/user/user";
-import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudnary";
+import { UserDetail } from "../../models/user/user-detail.model";
+import { User } from "../../models/user/user.model";
+import { IUser, IUserDetail } from "../../types/user/user";
+import { asyncHandler } from "../../utils/asyncHandler";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../../utils/cloudnary";
 
 export const accountProfile = asyncHandler(
   async (req: Request, res: Response) => {
@@ -138,6 +141,7 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
     ...profile, // profile fields
   };
 
+  finalUser._id = finalUser?.user?._id;
   delete finalUser.user; // remove nested user object
 
   return res.status(200).json({

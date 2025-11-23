@@ -1,10 +1,13 @@
-import { Request, Response } from "express";
-import { asyncHandler } from "../utils/asyncHandler";
-import { generateAccessAndRefereshTokens, User } from "../models/user.model";
-import { generateOTP } from "../utils/constant";
-import { sendMail } from "../utils/mail";
 import crypto from "crypto";
-import { UserDetail } from "../models/user-detail.model";
+import { Request, Response } from "express";
+import { UserDetail } from "../../models/user/user-detail.model";
+import {
+  generateAccessAndRefereshTokens,
+  User,
+} from "../../models/user/user.model";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { generateOTP } from "../../utils/constant";
+import { sendMail } from "../../utils/mail";
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const { firstName, lastName, email, phone, password } = req.body;

@@ -1,8 +1,8 @@
 import mongoose, { Model, Schema } from "mongoose";
-import { IUser } from "../types/user/user";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { IUser } from "../../types/user/user";
 
 const otpSchema = new Schema({
   code: String,

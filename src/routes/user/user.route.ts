@@ -6,8 +6,8 @@ import {
   otp,
   resetPassword,
   signup,
-} from "../controller/user.controller";
-import { verifyJWT } from "../middleware/auth.middleware";
+} from "../../controller/user/user.controller";
+import { verifyJWT } from "../../middleware/auth.middleware";
 
 const router = Router();
 

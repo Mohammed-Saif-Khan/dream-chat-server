@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { User } from "../models/user.model";
 import { asyncHandler } from "../utils/asyncHandler";
+import { User } from "../models/user/user.model";
 
 export const verifyJWT = asyncHandler(
   async (req: Request, res: Response, next) => {
