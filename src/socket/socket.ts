@@ -26,5 +26,18 @@ export const webSocket = (server: HttpServer) => {
     socket.on("stop-typing", ({ receiverId, senderId }) => {
       io.to(receiverId).emit("user-stop-typing", { senderId });
     });
+
+    socket.on("sending-message", (data) => {
+      const { receiverId } = data;
+      io.to(receiverId).emit("receiver-message", data);
+    });
+
+    socket.on("sending-message-edit-id", ({ tempId, originalMessage }) => {
+      const { receiverId } = originalMessage;
+      io.to(receiverId).emit("receiver-message-edit-id", {
+        tempId,
+        originalMessage,
+      });
+    });
   });
 };

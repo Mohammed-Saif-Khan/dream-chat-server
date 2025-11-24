@@ -1,23 +1,16 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { Message } from "../../models/messages/message.model";
-import { Chat } from "../../models/chat/chat.model";
 import { ObjectId } from "mongoose";
-import { io } from "../../socket/socket";
+import { Chat } from "../../models/chat/chat.model";
+import { Message } from "../../models/messages/message.model";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   const senderId = req.user?._id;
-  const { receiverId, message } = req.body;
+  const { receiverId, message, time } = req.body;
 
-  if (!receiverId || !message) {
+  if (!receiverId || !message || !time) {
     return res.status(404).json({ message: "All fields are required" });
   }
-
-  const now = new Date();
-  const time = now.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   const newMessage = await Message.create({
     senderId,
@@ -44,8 +37,6 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     path: "senderId",
     select: "firstName lastName",
   });
-
-  io.to(receiverId).emit("receiver-message", newMessage);
 
   return res
     .status(200)
