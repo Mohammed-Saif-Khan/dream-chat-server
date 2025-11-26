@@ -19,6 +19,11 @@ const messageSchema = new Schema<MessageDocuments>(
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["pending", "sent", "delivered", "read"],
+      default: "sent",
+    },
   },
   { timestamps: true, versionKey: false }
 );

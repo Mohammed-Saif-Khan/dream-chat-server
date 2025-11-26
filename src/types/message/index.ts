@@ -5,4 +5,5 @@ export interface MessageDocuments extends Document {
   receiverId: Types.ObjectId;
   message: string;
   time: string;
+  status: string;
 }
