@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { ChatDocuments } from "../../types/chat";
 
-const chatSchema = new Schema(
+const chatSchema = new Schema<ChatDocuments>(
   {
     participants: [
       {

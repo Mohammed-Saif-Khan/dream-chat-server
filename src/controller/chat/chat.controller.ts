@@ -32,3 +32,124 @@ export const getChat = asyncHandler(async (req: Request, res: Response) => {
     .status(200)
     .json({ success: true, data: chat, message: "Chat fetched successfully" });
 });
+
+export const getChatList = asyncHandler(async (req, res) => {
+  const senderId = req.user?._id;
+
+  if (!senderId) {
+    return res.status(400).json({ message: "Sender Id is required" });
+  }
+
+  const chatlist = await Chat.aggregate([
+    { $match: { participants: senderId } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "participants",
+        foreignField: "_id",
+        as: "participants",
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              firstName: 1,
+              lastName: 1,
+            },
+          },
+          {
+            $lookup: {
+              from: "userdetails",
+              localField: "_id",
+              foreignField: "user",
+              as: "details",
+              pipeline: [
+                {
+                  $project: {
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              avatar: { $arrayElemAt: ["$details.avatar", 0] },
+            },
+          },
+          {
+            $project: {
+              _id: 1,
+              firstName: 1,
+              lastName: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        participants: {
+          $filter: {
+            input: "$participants",
+            as: "p",
+            cond: { $ne: ["$$p._id", senderId] },
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        participants: { $arrayElemAt: ["$participants", 0] },
+      },
+    },
+    {
+      $lookup: {
+        from: "messages",
+        localField: "message",
+        foreignField: "_id",
+        as: "messageArr",
+        pipeline: [
+          { $match: { status: "delivered" } },
+          { $group: { _id: "$status", unreadCount: { $sum: 1 } } },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        unreadCount: { $arrayElemAt: ["$messageArr.unreadCount", 0] },
+      },
+    },
+    { $project: { messageArr: 0 } },
+    {
+      $lookup: {
+        from: "messages",
+        localField: "message",
+        foreignField: "_id",
+        as: "lastMessage",
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              message: 1,
+              time: 1,
+              status: 1,
+              createdAt: 1,
+            },
+          },
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        lastMessage: { $arrayElemAt: ["$lastMessage", 0] },
+      },
+    },
+    { $project: { message: 0 } },
+    { $sort: { "lastMessage.createdAt": -1 } },
+  ]);
+
+  res.status(200).json({ success: true, chatlist });
+});

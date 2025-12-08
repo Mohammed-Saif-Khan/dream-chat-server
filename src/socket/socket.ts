@@ -47,7 +47,9 @@ export const webSocket = (server: HttpServer) => {
         await Message.findByIdAndUpdate(messageId, {
           status: "read",
         });
-        io.to(senderId).emit("message-read", { messageIds: [messageId] });
+        io.to(senderId).emit("message-read", {
+          messageIds: [messageId],
+        });
       } catch (error) {
         console.log("Error updating read status:", error);
       }
