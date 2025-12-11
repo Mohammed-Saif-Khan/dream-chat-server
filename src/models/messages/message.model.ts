@@ -24,6 +24,14 @@ const messageSchema = new Schema<MessageDocuments>(
       enum: ["pending", "sent", "delivered", "read"],
       default: "sent",
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true, versionKey: false }
 );

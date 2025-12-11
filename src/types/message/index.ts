@@ -6,4 +6,6 @@ export interface MessageDocuments extends Document {
   message: string;
   time: string;
   status: string;
+  isDeleted: boolean;
+  deletedAt: Date;
 }

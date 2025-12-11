@@ -4,6 +4,7 @@ import { Chat } from "../../models/chat/chat.model";
 import { Message } from "../../models/messages/message.model";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { io } from "../../socket/socket";
+import { UserDetail } from "../../models/user/user-detail.model";
 
 export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   const senderId = req.user?._id;
@@ -49,16 +50,37 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     await chat.save();
   }
 
-  await newMessage.populate({
-    path: "senderId",
-    select: "firstName lastName",
-  });
+  await newMessage.populate([
+    {
+      path: "senderId",
+      select: "_id firstName lastName",
+    },
+    {
+      path: "receiverId",
+      select: "_id firstName lastName",
+    },
+  ]);
 
-  io.to(receiverId).emit("receiver-message", newMessage);
+  const userDetail = await UserDetail.findOne({
+    user: senderId,
+  }).select("avatar");
+
+  const receiverDetail = await UserDetail.findOne({
+    user: receiverId,
+  }).select("avatar");
+
+  const payload = {
+    ...newMessage.toObject(),
+    avatar: userDetail?.avatar || null,
+    receiverAvtar: receiverDetail?.avatar || null,
+    chatId: chat?._id,
+  };
+
+  io.to(receiverId).emit("receiver-message", payload);
 
   return res
     .status(200)
-    .json({ success: true, data: newMessage, message: "Message Sent" });
+    .json({ success: true, data: payload, message: "Message Sent" });
 });
 
 export const readMessage = asyncHandler(async (req: Request, res: Response) => {
@@ -98,3 +120,64 @@ export const readMessage = asyncHandler(async (req: Request, res: Response) => {
     message: "Message marked as read",
   });
 });
+
+export const deleteMessage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+    const { messageId } = req.params;
+
+    if (!messageId) {
+      return res.status(400).json({ message: "Message ID is required" });
+    }
+
+    const messageIds = messageId.includes(",")
+      ? messageId.split(",")
+      : [messageId];
+
+    const messages = await Message.find({ _id: { $in: messageIds } });
+
+    if (!messages || messages.length === 0) {
+      return res.status(400).json({ message: "Message not found" });
+    }
+
+    // FIRST DELETE → messages not deleted yet
+    const firstDeleteIds = messages
+      .filter((m) => !m.isDeleted)
+      .map((m) => m._id);
+
+    if (firstDeleteIds.length > 0) {
+      await Message.updateMany(
+        { _id: { $in: firstDeleteIds } },
+        { $set: { isDeleted: true } }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Message deleted (first delete)",
+        userId,
+        isDeleted: true,
+        deletedIds: firstDeleteIds,
+      });
+    }
+
+    // SECOND DELETE → deleted but no deletedAt
+    const secondDeleteIds = messages
+      .filter((m) => m.isDeleted && !m.deletedAt)
+      .map((m) => m._id);
+
+    if (secondDeleteIds.length > 0) {
+      await Message.updateMany(
+        { _id: { $in: secondDeleteIds } },
+        { $set: { deletedAt: new Date() } }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Message deleted (second delete)",
+        userId,
+        deletedAt: new Date(),
+        deletedIds: secondDeleteIds,
+      });
+    }
+  }
+);

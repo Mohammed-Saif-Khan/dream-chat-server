@@ -135,6 +135,8 @@ export const getChatList = asyncHandler(async (req, res) => {
               time: 1,
               status: 1,
               createdAt: 1,
+              isDeleted: 1,
+              deletedAt: null,
             },
           },
           { $sort: { createdAt: -1 } },
