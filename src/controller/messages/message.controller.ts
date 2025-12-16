@@ -141,43 +141,74 @@ export const deleteMessage = asyncHandler(
     }
 
     // FIRST DELETE → messages not deleted yet
-    const firstDeleteIds = messages
-      .filter((m) => !m.isDeleted)
-      .map((m) => m._id);
+    const firstDeleteMessages = messages.filter((m) => !m.isDeleted);
 
-    if (firstDeleteIds.length > 0) {
+    if (firstDeleteMessages?.length > 0) {
+      const firstDeleteIds = firstDeleteMessages.map((m) => m._id);
+
       await Message.updateMany(
         { _id: { $in: firstDeleteIds } },
         { $set: { isDeleted: true } }
       );
 
+      firstDeleteMessages?.forEach((msg) => {
+        io.to(msg?.receiverId.toString()).emit("message-delete", {
+          messageId: msg._id,
+          senderId: msg?.senderId,
+          receiverId: msg?.receiverId,
+          delete: "soft",
+        });
+      });
       return res.status(200).json({
         success: true,
         message: "Message deleted (first delete)",
         userId,
-        isDeleted: true,
+        delete: "soft",
         deletedIds: firstDeleteIds,
       });
     }
 
-    // SECOND DELETE → deleted but no deletedAt
-    const secondDeleteIds = messages
-      .filter((m) => m.isDeleted && !m.deletedAt)
-      .map((m) => m._id);
+    const secondDeleteMessages = messages.filter(
+      (m) => m.isDeleted && !m.deletedAt
+    );
 
-    if (secondDeleteIds.length > 0) {
+    if (secondDeleteMessages.length > 0) {
+      const secondDeleteIds = secondDeleteMessages.map((m) => m._id);
+      const deletedAt = new Date();
+
       await Message.updateMany(
         { _id: { $in: secondDeleteIds } },
-        { $set: { deletedAt: new Date() } }
+        { $set: { deletedAt } }
       );
 
-      return res.status(200).json({
-        success: true,
-        message: "Message deleted (second delete)",
-        userId,
-        deletedAt: new Date(),
-        deletedIds: secondDeleteIds,
-      });
+      for (const msg of secondDeleteMessages) {
+        const chat = await Chat.findOne({ message: msg._id }).populate({
+          path: "message",
+          match: { deletedAt: null },
+          options: { sort: { createdAt: -1 }, limit: 1 },
+          select: "_id message time status createdAt",
+        });
+
+        const lastMessage =
+          chat?.message && chat.message.length > 0 ? chat.message[0] : null;
+
+        io.to(msg.receiverId.toString()).emit("message-delete", {
+          messageId: msg._id,
+          senderId: msg.senderId,
+          receiverId: msg.receiverId,
+          delete: "hard",
+          lastMessage,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "Message deleted (second delete)",
+          userId,
+          delete: "hard",
+          lastMessage,
+          deletedIds: secondDeleteIds,
+        });
+      }
     }
   }
 );

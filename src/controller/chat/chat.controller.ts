@@ -110,7 +110,13 @@ export const getChatList = asyncHandler(async (req, res) => {
         foreignField: "_id",
         as: "messageArr",
         pipeline: [
-          { $match: { status: "delivered" } },
+          {
+            $match: {
+              status: "delivered",
+              isDeleted: false,
+              receiverId: senderId,
+            },
+          },
           { $group: { _id: "$status", unreadCount: { $sum: 1 } } },
         ],
       },
@@ -129,6 +135,11 @@ export const getChatList = asyncHandler(async (req, res) => {
         as: "lastMessage",
         pipeline: [
           {
+            $match: {
+              deletedAt: null,
+            },
+          },
+          {
             $project: {
               _id: 1,
               message: 1,
@@ -136,7 +147,8 @@ export const getChatList = asyncHandler(async (req, res) => {
               status: 1,
               createdAt: 1,
               isDeleted: 1,
-              deletedAt: null,
+              deletedAt: 1,
+              senderId: 1,
             },
           },
           { $sort: { createdAt: -1 } },
