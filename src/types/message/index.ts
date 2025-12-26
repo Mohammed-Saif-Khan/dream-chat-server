@@ -8,4 +8,10 @@ export interface MessageDocuments extends Document {
   status: string;
   isDeleted: boolean;
   deletedAt: Date;
+  isFavorite: boolean;
+}
+
+export interface FavouriteMessage extends Document {
+  user: Types.ObjectId;
+  favouriteMessage: Types.ObjectId[];
 }

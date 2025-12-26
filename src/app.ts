@@ -21,10 +21,11 @@ import userRouter from "./routes/user/user.route";
 import userDetailRouter from "./routes/user/user-detail.route";
 import messageRouter from "./routes/messages/message.routes";
 import chatRouter from "./routes/chats/chats.routes";
+import favouriteRouter from "./routes/messages/favourite.routes";
 
 app.use("/api/v1", userRouter);
 app.use("/api/v1", userDetailRouter);
-app.use("/api/v1", messageRouter);
 app.use("/api/v1", chatRouter);
-
+app.use("/api/v1", messageRouter);
+app.use("/api/v1", favouriteRouter);
 export { app };

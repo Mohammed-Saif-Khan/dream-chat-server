@@ -32,6 +32,10 @@ const messageSchema = new Schema<MessageDocuments>(
       type: Date,
       default: null,
     },
+    isFavorite: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true, versionKey: false }
 );
