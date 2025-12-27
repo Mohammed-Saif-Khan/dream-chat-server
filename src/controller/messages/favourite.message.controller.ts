@@ -71,3 +71,23 @@ export const favouriteMessage = asyncHandler(
     });
   }
 );
+
+export const getFavouriteMessage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(404).json({ message: "User ID not found" });
+    }
+
+    const favourites = await Favourite.findOne({ user: userId }).populate({
+      path: "favouriteMessage",
+      select: "-deletedAt -isDeleted",
+    });
+
+    return res.status(200).json({
+      favourites,
+      message: "Favourite data fetched successfully",
+    });
+  }
+);

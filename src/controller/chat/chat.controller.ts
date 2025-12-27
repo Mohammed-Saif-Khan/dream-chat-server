@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../../utils/asyncHandler";
 import { Chat } from "../../models/chat/chat.model";
+import { Favourite } from "../../models/messages/favourite-message";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 export const getChat = asyncHandler(async (req: Request, res: Response) => {
   const senderId = req.user?._id;
@@ -11,6 +12,12 @@ export const getChat = asyncHandler(async (req: Request, res: Response) => {
       .status(400)
       .json({ message: "SenderId and ReceiverId are required" });
   }
+
+  const favouriteDoc = await Favourite.findOne({ user: senderId });
+
+  const favouriteIds = favouriteDoc
+    ? favouriteDoc?.favouriteMessage?.map((id) => id.toString())
+    : [];
 
   const chat = await Chat.findOne({
     participants: { $all: [receiverId, senderId], $size: 2 },
@@ -28,9 +35,19 @@ export const getChat = asyncHandler(async (req: Request, res: Response) => {
       .json({ success: false, message: "Chat is not found" });
   }
 
-  return res
-    .status(200)
-    .json({ success: true, data: chat, message: "Chat fetched successfully" });
+  const chatWithFavouriteFlag = {
+    ...chat.toObject(),
+    message: chat.message.map((msg: any) => ({
+      ...msg.toObject(),
+      isFavorite: favouriteIds.includes(msg._id.toString()),
+    })),
+  };
+
+  return res.status(200).json({
+    success: true,
+    data: chatWithFavouriteFlag,
+    message: "Chat fetched successfully",
+  });
 });
 
 export const getChatList = asyncHandler(async (req, res) => {
