@@ -3,6 +3,7 @@ import { Document, Types } from "mongoose";
 export interface MessageDocuments extends Document {
   senderId: Types.ObjectId;
   receiverId: Types.ObjectId;
+  replyTo: Types.ObjectId;
   message: string;
   time: string;
   status: string;
@@ -13,5 +14,6 @@ export interface MessageDocuments extends Document {
 
 export interface FavouriteMessage extends Document {
   user: Types.ObjectId;
-  favouriteMessage: Types.ObjectId[];
+  chat: Types.ObjectId;
+  message: Types.ObjectId;
 }

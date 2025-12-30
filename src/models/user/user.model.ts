@@ -52,8 +52,20 @@ export const userSchema = new Schema<IUser>(
       type: Date,
     },
   },
-  { timestamps: true, versionKey: false }
+  {
+    timestamps: true,
+    versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+userSchema.virtual("profile", {
+  ref: "userDetail",
+  localField: "_id",
+  foreignField: "user",
+  justOne: true,
+});
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();

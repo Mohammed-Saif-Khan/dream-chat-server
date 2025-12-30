@@ -1,93 +1,89 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../../utils/asyncHandler";
-import { Message } from "../../models/messages/message.model";
 import { Favourite } from "../../models/messages/favourite-message";
-import mongoose from "mongoose";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 export const favouriteMessage = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
     const { messageId } = req.params;
+    const { chatId } = req.body;
 
-    if (!messageId) {
-      return res.status(400).json({ message: "Message ID is required" });
+    if (!chatId || !messageId) {
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    const message = await Message.findById(messageId);
-    if (!message) {
-      return res.status(404).json({ message: "Message not found" });
-    }
-
-    let favourite = await Favourite.findOne({ user: userId });
-
-    if (!favourite) {
-      favourite = await Favourite.create({
-        user: userId,
-        favouriteMessage: [messageId],
-      });
-
-      return res.status(200).json({
-        favourite,
-        message: "Message added to favourites",
-        isFavourite: true,
-      });
-    }
-
-    const isAlreadyFavourite = favourite.favouriteMessage.includes(
-      new mongoose.Types.ObjectId(messageId)
-    );
-
-    if (isAlreadyFavourite) {
-      favourite = await Favourite.findOneAndUpdate(
-        { user: userId },
-        { $pull: { favouriteMessage: messageId } },
-        { new: true }
-      );
-
-      return res.status(200).json({
-        favourite,
-        message: "Message removed from favourites",
-        isFavourite: false,
-      });
-    }
-
-    favourite = await Favourite.findOneAndUpdate(
-      { user: userId },
-      {
-        $push: {
-          favouriteMessage: {
-            $each: [messageId],
-            $position: 0,
-          },
-        },
-      },
-      { new: true }
-    );
-
-    return res.status(200).json({
-      favourite,
-      message: "Message added to favourites",
-      isFavourite: true,
+    const existing = await Favourite.findOne({
+      user: userId,
+      chat: chatId,
+      message: messageId,
     });
+
+    if (existing) {
+      await Favourite.deleteOne({ _id: existing?._id });
+      return res.status(200).json({
+        success: true,
+        message: "Remove as Favourite",
+      });
+    } else {
+      const favourite = await Favourite.create({
+        user: userId,
+        chat: chatId,
+        message: messageId,
+      });
+      return res
+        .status(200)
+        .json({ success: true, data: favourite, message: "Mark as Favourite" });
+    }
   }
 );
 
 export const getFavouriteMessage = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?._id;
+    const { chatId } = req.params;
 
-    if (!userId) {
-      return res.status(404).json({ message: "User ID not found" });
+    if (!chatId) {
+      return res.status(400).json({ message: "Chat Id is not found!" });
     }
 
-    const favourites = await Favourite.findOne({ user: userId }).populate({
-      path: "favouriteMessage",
-      select: "-deletedAt -isDeleted",
+    const favourite = await Favourite.find({
+      user: userId,
+      chat: chatId,
+    }).populate({
+      path: "message",
+      select: "-isFavorite -isDeleted -deletedAt",
+      populate: [
+        {
+          path: "senderId",
+          select: "_id firstName lastName",
+          populate: {
+            path: "profile",
+            model: "userDetail",
+            select: "avatar -_id -user",
+          },
+        },
+        {
+          path: "receiverId",
+          select: "_id firstName lastName",
+          populate: {
+            path: "profile",
+            model: "userDetail",
+            select: "avatar -_id -user",
+          },
+        },
+        {
+          path: "replyTo",
+          select: "_id message senderId",
+          populate: {
+            path: "senderId",
+            select: "firstName lastName",
+          },
+        },
+      ],
     });
 
-    return res.status(200).json({
-      favourites,
-      message: "Favourite data fetched successfully",
-    });
+    return res
+      .status(200)
+      .json({ data: favourite, message: "Favourite Fetched Successfully" });
   }
 );

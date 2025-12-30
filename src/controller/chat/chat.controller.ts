@@ -13,20 +13,24 @@ export const getChat = asyncHandler(async (req: Request, res: Response) => {
       .json({ message: "SenderId and ReceiverId are required" });
   }
 
-  const favouriteDoc = await Favourite.findOne({ user: senderId });
-
-  const favouriteIds = favouriteDoc
-    ? favouriteDoc?.favouriteMessage?.map((id) => id.toString())
-    : [];
-
   const chat = await Chat.findOne({
     participants: { $all: [receiverId, senderId], $size: 2 },
   }).populate({
     path: "message",
-    populate: {
-      path: "senderId",
-      select: "_id firstName lastName",
-    },
+    populate: [
+      {
+        path: "senderId",
+        select: "_id firstName lastName",
+      },
+      {
+        path: "replyTo",
+        select: "_id message senderId isDeleted",
+        populate: {
+          path: "senderId",
+          select: "firstName lastName",
+        },
+      },
+    ],
   });
 
   if (!chat) {
@@ -35,11 +39,18 @@ export const getChat = asyncHandler(async (req: Request, res: Response) => {
       .json({ success: false, message: "Chat is not found" });
   }
 
+  const favourites = await Favourite.find({
+    user: senderId,
+    chat: chat._id,
+  }).select("message");
+
+  const favouriteSet = new Set(favourites.map((f) => f.message.toString()));
+
   const chatWithFavouriteFlag = {
     ...chat.toObject(),
     message: chat.message.map((msg: any) => ({
       ...msg.toObject(),
-      isFavorite: favouriteIds.includes(msg._id.toString()),
+      isFavorite: favouriteSet.has(msg._id.toString()),
     })),
   };
 

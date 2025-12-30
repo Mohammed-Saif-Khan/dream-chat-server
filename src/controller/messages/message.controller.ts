@@ -8,7 +8,7 @@ import { UserDetail } from "../../models/user/user-detail.model";
 
 export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   const senderId = req.user?._id;
-  const { receiverId, message, time } = req.body;
+  const { receiverId, message, time, replyTo } = req.body;
 
   if (!receiverId || !message || !time) {
     return res.status(404).json({ message: "All fields are required" });
@@ -34,6 +34,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     message,
     time,
     status,
+    replyTo: replyTo || null,
   });
 
   let chat = await Chat.findOne({
@@ -58,6 +59,14 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
     {
       path: "receiverId",
       select: "_id firstName lastName",
+    },
+    {
+      path: "replyTo",
+      select: "_id message senderId",
+      populate: {
+        path: "senderId",
+        select: "firstName lastName",
+      },
     },
   ]);
 
@@ -212,5 +221,3 @@ export const deleteMessage = asyncHandler(
     }
   }
 );
-
-

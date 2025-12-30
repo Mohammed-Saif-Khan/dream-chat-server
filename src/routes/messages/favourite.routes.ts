@@ -10,6 +10,6 @@ const router = Router();
 router.use(verifyJWT);
 
 router.route("/favourite/:messageId").put(favouriteMessage);
-router.route("/favourite").get(getFavouriteMessage);
+router.route("/favourite/:chatId").get(getFavouriteMessage);
 
 export default router;

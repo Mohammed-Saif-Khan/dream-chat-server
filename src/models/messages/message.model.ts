@@ -15,6 +15,11 @@ const messageSchema = new Schema<MessageDocuments>(
       type: String,
       required: true,
     },
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "message",
+      default: null,
+    },
     time: {
       type: String,
       required: true,

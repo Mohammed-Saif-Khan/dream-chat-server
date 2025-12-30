@@ -6,15 +6,20 @@ const favouriteMessage = new Schema<FavouriteMessage>(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
+      required: true,
     },
-    favouriteMessage: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "message",
-      },
-    ],
+    chat: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "chat",
+      required: true,
+    },
+    message: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "message",
+      required: true,
+    },
   },
-  { versionKey: false, timestamps: true }
+  { timestamps: true, versionKey: false }
 );
 
 export const Favourite = mongoose.model<FavouriteMessage>(
