@@ -1,6 +1,7 @@
 import { Document, Types } from "mongoose";
 
 export interface MessageDocuments extends Document {
+  _id: Types.ObjectId;
   senderId: Types.ObjectId;
   receiverId: Types.ObjectId;
   replyTo: Types.ObjectId;

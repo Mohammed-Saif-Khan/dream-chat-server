@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ObjectId } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { Chat } from "../../models/chat/chat.model";
 import { Message } from "../../models/messages/message.model";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -47,7 +47,7 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
       message: [newMessage?._id],
     });
   } else {
-    chat.message.push(newMessage?._id as ObjectId);
+    chat.message.push(newMessage?._id);
     await chat.save();
   }
 
@@ -219,5 +219,83 @@ export const deleteMessage = asyncHandler(
         });
       }
     }
+  }
+);
+
+export const forwardMessage = asyncHandler(
+  async (req: Request, res: Response) => {
+    const senderId = req.user?._id;
+    const { messageIds, receiverIds, time } = req.body;
+
+    if (
+      !Array.isArray(messageIds) ||
+      messageIds.length === 0 ||
+      !Array.isArray(receiverIds) ||
+      receiverIds.length === 0 ||
+      !time
+    ) {
+      return res.status(400).json({
+        message: "messageIds, receiverIds (array) and time are required",
+      });
+    }
+
+    const originalMessages = await Message.find({
+      _id: { $in: messageIds },
+    });
+
+    if (originalMessages.length === 0) {
+      return res.status(404).json({ message: "Messages not found" });
+    }
+
+    for (const originalMessage of originalMessages) {
+      for (const receiver of receiverIds) {
+        let status: "sent" | "delivered" = "sent";
+
+        try {
+          const room = io.sockets.adapter.rooms.get(receiver);
+          if (room && room.size > 0) status = "delivered";
+        } catch (error) {
+          console.error("Online check error:", error);
+        }
+
+        const newMessage = await Message.create({
+          senderId,
+          receiverId: receiver,
+          message: originalMessage.message,
+          time,
+          status,
+          replyTo: null,
+        });
+
+        let chat = await Chat.findOne({
+          participants: { $all: [senderId, receiver], $size: 2 },
+        });
+
+        if (!chat) {
+          chat = await Chat.create({
+            participants: [senderId, receiver],
+            message: [newMessage._id],
+          });
+        } else {
+          chat.message.push(newMessage._id);
+          await chat.save();
+        }
+
+        await newMessage.populate([
+          { path: "senderId", select: "_id firstName lastName" },
+          { path: "receiverId", select: "_id firstName lastName" },
+        ]);
+
+        io.to(receiver).emit("receiver-message", {
+          ...newMessage.toObject(),
+          chatId: chat._id,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Messages forwarded to multiple users successfully",
+    });
   }
 );

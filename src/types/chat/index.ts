@@ -1,7 +1,7 @@
-import mongoose, { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface ChatDocuments extends Document {
-  participants: mongoose.Schema.Types.ObjectId[];
-  message: mongoose.Schema.Types.ObjectId[];
+  participants: Types.ObjectId[];
+  message: Types.ObjectId[];
   unreadMessage: number;
 }
